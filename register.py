@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButto
 #class ChildClass(ParentClass): PascalCase
 class AccountingApp(QWidget):
     #1.Properties = Varaible = Store
-    setting={}
+    settings={}
     #2. Class constructor
     def __init__(self): # self=cio
         super().__init__() # I can call the parent construtor this way
