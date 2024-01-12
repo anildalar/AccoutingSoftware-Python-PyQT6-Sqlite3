@@ -3,7 +3,7 @@ import json
 import os
 import winreg
 from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QMessageBox
-
+from cryptography.fernet import Fernet
 
 
 #1. Class defination
@@ -11,6 +11,8 @@ from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QLineEdit, QPushButto
 class AccountingApp(QWidget):
     #1.Properties = Varaible = Store
     settings={}
+    encryption_key = b'OKLABSisTheBestChannel'
+    cipher = Fernet(encryption_key)
     #2. Class constructor
     def __init__(self): # self=cio
         super().__init__() # I can call the parent construtor this way
@@ -33,38 +35,52 @@ class AccountingApp(QWidget):
         print(type(self.settings)) #cio
         pass 
     # Define
+    def encrypt_value(self, value):
+        encrypted_value = self.cipher.encrypt(value.encode())
+        return encrypted_value
+
+    def decrypt_value(self, encrypted_value):
+        decrypted_value = self.cipher.decrypt(encrypted_value).decode()
+        return decrypted_value
+    
     def checkIfAdminIsCreated(self):
         print('Hello from checkIfAdminIsCreated')
         
-        registry_key_path = r"SOFTWARE\accountingsoftware"
-        value_name = "isAdminCreated"
-         # Open the registry key for reading
+        registry_key_path = r"SOFTWARE\as"
+        value_name = "dt"
+        default_json = '{"isAdminCreated":false,"isLicenseActivated":false}'
+        # Open the registry key for reading
+        # Initialize key outside the try block
+        key = None
         try:
             # Open the registry key for reading
             key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, registry_key_path)
             
-            # Read the value of the specified entry
-            value, _ = winreg.QueryValueEx(key, value_name)
-            #print(type(value.lower()))
-            if value.lower() == "true":
-                # Show the Login Form
-                print("Show the Login Form")
-                pass
-            elif value.lower() == "false":
-                # Show the Registeration Form
-                print("Show the Registeration Form")
-                pass
+            # Read the encrypted value of the specified entry
+            encrypted_value, _ = winreg.QueryValueEx(key, value_name)
+
+            if encrypted_value:
+                # Decrypt the value if it exists
+                decrypted_value = self.decrypt_value(encrypted_value)
+                print(f"Existing decrypted value: {decrypted_value}")
             else:
-                # Create a entry with the registry key
-                # isAdminCreated= false
-                print("Create a entry isAdminCreated= false")
+                # Encrypt and create an entry with the registry key and set the default JSON string
+                encrypted_default_json = self.encrypt_value(default_json)
+                print("Create an entry dt with default JSON value")
+                winreg.SetValueEx(key, value_name, 0, winreg.REG_SZ, encrypted_default_json)
                 
             # Close the registry key
         except FileNotFoundError:
+            print("KeyNotFoundError")
+            
+            #ceo = ceo2.ClassName(ca1,ca2)
             key = winreg.CreateKey(winreg.HKEY_LOCAL_MACHINE, registry_key_path)
-            winreg.SetValueEx(key, value_name, 0, winreg.REG_SZ, "false")
+            winreg.SetValueEx(key, value_name, 0, winreg.REG_SZ, default_json)
         
-        winreg.CloseKey(key)
+        finally:
+            # Close the registry key if it's open
+            if key:
+                winreg.CloseKey(key)
         pass
     
     def buildUI(self):
